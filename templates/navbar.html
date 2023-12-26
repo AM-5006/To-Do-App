@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.0/css/all.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+        <title> {%block title%} {%endblock title%}</title>
+
+        <style>
+            @import "https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700";
+          
+            body {
+                font-family: 'Poppins', sans-serif;
+                background: #fafafa;
+            }
+          
+            p {
+                font-family: 'Poppins', sans-serif;
+                font-size: 1.1em;
+                font-weight: 300;
+                line-height: 1.7em;
+                color: #999;
+            }
+          
+            a,
+            a:hover,
+            a:focus {
+                color: inherit;
+                text-decoration: none;
+                transition: all 0.3s;
+            }
+          
+            .navbar {
+                padding: 15px 10px;
+                background: #fff;
+                border: none;
+                border-radius: 0;
+                margin-bottom: 40px;
+                box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.1);
+            }
+          
+            .navbar-btn {
+                box-shadow: none;
+                outline: none !important;
+                border: none;
+            }
+          
+            .line {
+                width: 100%;
+                height: 1px;
+                border-bottom: 1px dashed #ddd;
+                margin: 40px 0;
+            }
+          
+            .wrapper {
+                display: flex;
+                width: 100%;
+                align-items: stretch;
+            }
+          
+            #sidebar {
+                min-width: 250px;
+                max-width: 250px;
+                background: #7386D5;
+                color: #fff;
+                transition: all 0.3s;
+            }
+          
+            #sidebar.active {
+                margin-left: -250px;
+            }
+          
+            #sidebar .sidebar-header {
+                padding: 20px;
+                background: #6d7fcc;
+            }
+          
+            #sidebar ul.components {
+                padding: 20px 0;
+                border-bottom: 1px solid #47748b;
+            }
+          
+            #sidebar ul p {
+                color: #fff;
+                padding: 10px;
+            }
+          
+            #sidebar ul li a {
+                padding: 10px;
+                font-size: 1.1em;
+                display: block;
+            }
+          
+            #sidebar ul li a:hover {
+                color: #7386D5;
+                background: #fff;
+            }
+          
+            #sidebar ul li.active>a,
+            a[aria-expanded="true"] {
+                color: #fff;
+                background: #6d7fcc;
+            }
+          
+            a[data-toggle="collapse"] {
+                position: relative;
+            }
+          
+            .dropdown-toggle::after {
+                display: block;
+                position: absolute;
+                top: 50%;
+                right: 20px;
+                transform: translateY(-50%);
+            }
+          
+            ul ul a {
+                font-size: 0.9em !important;
+                padding-left: 30px !important;
+                background: #6d7fcc;
+            }
+          
+            ul.CTAs {
+                padding: 20px;
+            }
+          
+            ul.CTAs a {
+                text-align: center;
+                font-size: 0.9em !important;
+                display: block;
+                border-radius: 5px;
+                margin-bottom: 5px;
+            }
+          
+            a.download {
+                background: #fff;
+                color: #7386D5;
+            }
+          
+            a.article,
+            a.article:hover {
+                background: #6d7fcc !important;
+                color: #fff !important;
+            }
+          
+            #content {
+                width: 100%;
+                padding: 20px;
+                min-height: 100vh;
+                transition: all 0.3s;
+            }
+          
+            @media (max-width: 768px) {
+                #sidebar {
+                    min-width: 180px;
+                    max-width: 180px;
+                }
+              
+                #sidebar.active {
+                    margin-left: -180px;
+                }
+          
+                #sidebarCollapse span {
+                    display: none;
+                }
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(255, 255, 255, 0.8);
+                justify-content: center;
+                align-items: center;
+                z-index: 9999;
+            }
+            
+            .spinner {
+                border: 8px solid #f3f3f3;
+                border-top: 8px solid #3498db;
+                border-radius: 50%;
+                width: 50px;
+                height: 50px;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+        </style>
+        {%block style%}
+        {%endblock style%}
+    
+    </head>
+    <body>
+        <div id="loadingOverlay" class="overlay">
+            <div class="spinner"></div>
+        </div>
+        <div class="wrapper">
+            <!-- Sidebar  -->
+            <nav id="sidebar" class="active">
+                <div class="sidebar-header">
+                    <h3></h3>
+                </div>
+          
+                <ul class="list-unstyled components">
+                    <li {% if request.path == '/' %}class="active"{% endif %}>
+                        <a href="{% url "index" %}">
+                          <i class="fas fa-home"></i>
+                          Home</a>
+                    </li>
+                    <li {% if request.path == '/profile_page/' %}class="active"{% endif %}>
+                        <a href="{% url "profile_page" %}">
+                          <i class="fas fa-user"></i>
+                          Profile</a>
+                    </li>
+                    <li>
+                        <a href="{% url "logout" %}">
+                          <i class="fas fa-sign-out-alt me-2"></i>
+                          Log Out</a>
+                    </li>
+                </ul>
+            </nav>
+
+            
+          
+            <div id="content">
+                <nav class="navbar navbar-expand-lg navbar-light bg-light">
+                    <div class="container-fluid">
+          
+                        <button type="button" id="sidebarCollapse" class="btn btn-info">
+                            <i class="fas fa-align-left"></i>
+                        </button>
+                        <button class="btn btn-dark d-inline-block d-lg-none ml-auto" type="button" data-toggle="collapse"
+                            data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                            aria-expanded="false" aria-label="Toggle navigation">
+                            <i class="fas fa-align-justify"></i>
+                        </button>
+          
+                        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                          <span class="navbar-text ml-auto">
+                            Todo
+                          </span>
+                        </div>
+                    </div>
+                </nav>
+                {%block body%}
+                {%endblock body%}
+
+                {%block downSidebar%}
+                {%endblock downSidebar%}
+            </div>
+        </div>
+          
+        
+        <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/popper.js@1.14.7/dist/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.3.1/dist/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+        <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> 
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+        {%block script%}
+        {%endblock script%}
+
+        <script>
+            let overlay = document.getElementById('loadingOverlay');
+
+            function showLoadingOverlay() {
+                overlay.style.display = 'flex';
+            }
+    
+            function hideLoadingOverlay() {
+                overlay.style.display = 'none';
+            }
+            
+            function displayAlert(message, alertType) {
+                const alertClass = alertType === 'success' ? 'alert-success' : 'alert-danger';
+              
+                alertContainer.innerHTML = `
+                  <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                      <span aria-hidden="true">&times;</span>
+                    </button>
+                  </div>
+                `;
+              
+                setTimeout(function () {
+                  const alert = document.querySelector(`.alert.${alertClass}`);
+                  if (alert) {
+                    alert.classList.remove('show');
+                    alert.classList.add('hide');
+                    alert.remove();
+                  }
+                }, 2000); 
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                setUserName();
+            
+                function setUserName() {
+                  let userNameh3 = document.querySelector('.sidebar-header h3');
+                  let accessToken = localStorage.getItem('access_token');
+            
+                  if (accessToken) {
+                    let headers = {
+                      Authorization: `Bearer ${accessToken}`,
+                      'Content-Type': 'application/json',
+                    };
+            
+                    axios.get('/api/profile/', { headers: headers })
+                      .then(function (response) {
+                        let user = response.data;
+                        userNameh3.textContent = user.username;
+                      })
+                      .catch(function (error) {
+                        userDetailsContainer.innerHTML = '<div class="alert alert-danger" role="alert">Failed to fetch user details.</div>';
+                        window.location.href = '{% url "logout" %}';
+                      });
+                  } else {
+                    userDetailsContainer.innerHTML = '<div class="alert alert-warning" role="alert">Access token not available. Please log in.</div>';
+                    window.location.href = '{% url "logout" %}';
+                  }
+                }
+            });
+        </script>
+
+    </body>
+</html>

@@ -1,0 +1,644 @@
+{% extends "navbar.html" %}
+{% load static %}  
+{% block title%}Home{% endblock title %}
+
+{% block style %}
+<style>
+  .tasks-section {
+    background-color: #f0f0f0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .card-complete,
+  .card-high-priority,
+  .card-low-priority {
+    border-radius: 10px;
+    margin-bottom: 10px;
+    margin-right: 10px;
+    max-height: 100px;
+    transition: opacity 0.9s ease-in-out;
+  }
+
+  .card-complete {
+    border: 1px solid blue;
+    background-color: rgba(0, 0, 255, 0.3);
+  }
+
+  .card-high-priority {
+    border: 1px solid red;
+    background-color: rgba(255, 0, 0, 0.3);
+  }
+
+  .card-low-priority {
+    border: 1px solid green;
+    background-color: rgba(0, 255, 0, 0.3);
+  }
+
+  .card-body {
+    max-height: 100px; 
+    max-width: 600px;
+    overflow: hidden;
+  }
+  
+  .card-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+    color: #333;
+    font-size: 14px; /* Adjust font size as needed */
+    margin-bottom: 5px; /* Adjust margin as needed */
+  }
+
+  .card-title {
+    font-size: 16px; /* Adjust font size as needed */
+    margin-bottom: 5px; /* Adjust margin as needed */
+  }
+
+  .text-muted {
+    font-size: 12px; /* Adjust font size as needed */
+  }
+
+  .add-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    background-color: #007bff;
+    color: #fff;
+    font-size: 24px;
+    border: none;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  #scrollable-container {
+    max-height: 60vh; /* You can adjust this value based on your needs */
+    overflow-y: auto;
+    margin-bottom: 15px; /* Adjust the margin-bottom to add space between scroll and cards */
+  }
+
+  #taskDetailsModal .modal-body {
+    max-height: 60vh; 
+    overflow-y: auto;
+  }
+
+  .card-remove {
+    opacity: 0;
+    pointer-events: none;
+    height: 0;
+    margin: 0;
+    padding: 0;
+  }
+
+  #bottomSidebar {
+    min-height: 500px;
+    max-height: 500px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #7386D5;
+    color: #fff;
+    padding: 20px;
+    transition: all 0.3s;
+    margin-bottom: 0px;
+    border-top-left-radius: 80px;
+    border-top-right-radius: 80px;
+  }
+
+  #bottomSidebar.active {
+    margin-bottom: -500px;
+  }
+
+  #closeDownSidebar {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 1.5em;
+    cursor: pointer;
+    outline: none;
+  }
+
+  #closeDownSidebar:hover {
+    color: #ccc;
+  }
+
+  #closeDownSidebar {
+    top: 5px;
+  }
+
+</style>
+{% endblock style %}
+
+
+{%block downSidebar%}
+<nav id="bottomSidebar" class="active">
+  <div class="container">
+    <div class="row justify-content-center">
+      <button id="closeDownSidebar" class="btn btn-dark position-absolute top-0 start-50 translate-middle-x">
+        <i class="fas fa-chevron-down"></i>
+      </button>
+      <div class="row justify-content-center mt-5">
+        <div class="col-md-6">
+          <label for="statusFilter" class="form-label">Filter by Status:</label>
+          <select class="form-select" id="statusFilter">
+            <option value="">Pending tasks</option>
+            <option value="CT">Completed tasks</option>
+            <option value="HP">High Priority</option>
+            <option value="LP">Low Priority</option>
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label for="sortOrder" class="form-label">Sort Order:</label><br>
+          <select class="form-select" id="sortOrder">
+            <option value="LST">Lastest</option>
+            <option value="OLD">Oldests</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- OK button at the bottom and center -->
+    <div class="row justify-content-center mt-5 mb-5">
+      <div class="col-md-3 mt-5 mb-5">
+        <button id="recentTasks" class="btn btn-primary btn-block">Recent Completed Tasks</button>
+        <button id="okButton" class="btn btn-primary btn-block">OK</button>
+      </div>
+    </div>
+  </div>
+</nav>
+{%endblock downSidebar%}
+
+
+{% block body %}
+<div id="alertContainer"></div>
+<div class="container-fluid">
+  <div class="row justify-content-center align-items-start mt-5 mb-5" style="min-height: 100vh;">
+    <!-- Tasks Section -->
+    <div class="col-md-8">
+      <div class="tasks-section">
+        <div class="mb-3">
+          <center><h2 class="mb-0">Your Tasks</h2></center>
+          <button class="btn btn-outline-primary filter-button" id="openDownSidebar" style="display:None;">
+            <i class="fas fa-filter"></i> Filter
+          </button>
+        </div>
+        <!-- Wrap tasks-container with a scrollable div -->
+        <div id="scrollable-container">
+          <div id="tasks-container">
+            <!-- Tasks will be displayed here -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<button class="btn add-button" data-bs-toggle="modal" data-bs-target="#addTaskModal">
+  <i class="fas fa-plus"></i>
+</button>
+
+<div class="modal fade" id="addTaskModal" tabindex="-1" role="dialog" aria-labelledby="addTaskModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="addTaskModalLabel">Add Task</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <!-- Add your form for adding tasks here -->
+        <form id="addTaskForm" method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label for="title" class="form-label">Title</label>
+            <input type="text" class="form-control" id="title" name="title" required>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+          </div>
+          <div class="mb-3 form-check">
+            <input type="checkbox" class="form-check-input" id="priority" name="priority">
+            <label class="form-check-label" for="priority">Priority</label>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" data-bs-dismiss="modal">Save Task</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal fade" id="taskDetailsModal" tabindex="-1" role="dialog" aria-labelledby="taskDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="taskDetailsModalLabel">Task Details</h5>
+        <button type="button" class="close" data-bs-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div id="modalContent">
+          <h5 id="modalTitle"></h5>
+          <p id="modalDescription"></p>
+          <small id="modalPriority"></small><br>
+          <small id="modalDate"></small>
+          <small id="completeDate" style="display:None"></small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-warning" data-bs-dismiss="modal" id="taskDoneButton" style="display:None;">Done</button>
+        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" id="taskDeleteButton" style="display:None;">Delete Task</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const addTaskForm = document.getElementById('addTaskForm');
+    const tasksContainer = document.getElementById("tasks-container");
+    const alertContainer = document.getElementById("alertContainer");
+    const taskDoneButton = document.getElementById('taskDoneButton');
+    const taskDeleteButton = document.getElementById('taskDeleteButton');
+
+    let filter = localStorage.getItem('selectedFilter') || '';
+    let order = localStorage.getItem('selectedOrder') || '';
+
+    fetchTasks(filter, order);
+    
+    let currentTaskId = null; 
+    
+    document.getElementById('okButton').addEventListener('click', function () {
+      handleFilterSortChange();
+    });
+
+    document.getElementById('recentTasks').addEventListener('click', function () {
+      handleRecentTasks();
+    });
+
+    function handleRecentTasks(){
+      filter = '';
+      order = 'REC';
+      closeDownSidebar();
+      removeAllTaskCards();
+      showLoadingOverlay();
+      fetchTasks(filter, order);
+    }
+
+    function handleFilterSortChange() {
+      const selectedStatus = document.getElementById('statusFilter').value;
+      const selectedSortOrder = document.getElementById('sortOrder').value;
+      closeDownSidebar();
+      filter = selectedStatus;
+      order = selectedSortOrder;
+      removeAllTaskCards();
+      showLoadingOverlay();
+      fetchTasks(filter, order);
+    }
+
+    function fetchTasks(filter, order) {
+      localStorage.setItem('selectedFilter', filter);
+      localStorage.setItem('selectedOrder', order);
+      let accessToken = localStorage.getItem('access_token');
+      if (accessToken) {
+        let headers = {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+    
+        isTasksPresent(headers).then((tasksPresent) => {
+          if (tasksPresent === false) {
+            hideLoadingOverlay();
+            displayEmptyTasksBackground("You don't have any tasks");
+            document.getElementById('openDownSidebar').style.display = 'none';
+          } else {
+            document.getElementById('openDownSidebar').style.display = 'block';
+            showLoadingOverlay();
+            axios
+              .get(`/api/task/?filter=${filter}&order=${order}`, { headers: headers })
+              .then(function (response) {
+                const tasks = response.data;
+                hideLoadingOverlay();
+                if(tasks.length===0){
+                  if(filter==='CT' || order==='REC')
+                    displayEmptyTasksBackground('No tasks completed');
+                  else if(filter==='')
+                    displayEmptyTasksBackground('No Pending tasks');
+                  else if(filter==='HP')
+                    displayEmptyTasksBackground('No high priority tasks');
+                  else if(filter==='LP')
+                    displayEmptyTasksBackground('No low priority tasks');     
+                }else{
+                  tasks.forEach(function (task) {
+                    addTaskToContainer(task);
+                  });
+                }
+              })
+              .catch(function (error) {
+                hideLoadingOverlay();
+                window.location.href = '{% url "logout" %}';
+              });
+          }
+        });
+      } else {
+        hideLoadingOverlay();
+        window.location.href = '{% url "logout" %}';
+      }
+    }
+    
+    function isTasksPresent(headers) {
+      return axios
+        .get(`/api/task/?filter=ALL`, { headers: headers })
+        .then(function (response) {
+          return response.data.length !== 0;
+        })
+        .catch(function (error) {
+          return false; 
+        });
+    }
+    
+    addTaskForm.addEventListener('submit', function (event) {
+      event.preventDefault();
+      let formData = new FormData(addTaskForm);
+      let accessToken = localStorage.getItem('access_token');
+      if (accessToken) {
+        let headers = {
+          Authorization: `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        };
+        showLoadingOverlay();
+        axios.post('/api/task/', formData, { headers: headers })
+          .then(function (response) {
+            const newTask = response.data;
+            //hideLoadingOverlay();
+            displayAlert('Task added successfully', 'success');
+            addTaskToContainer(newTask);
+            addTaskForm.reset();
+            filter = '';
+            order = '';
+            removeAllTaskCards();
+            fetchTasks(filter, order);
+          })
+          .catch(function (error) {
+            //hideLoadingOverlay();
+            addTaskForm.reset();
+            let errorMessage = error.response.data.detail;
+            if (errorMessage.includes('token not valid')) {
+              window.location.href = '{% url "logout" %}';
+            }
+            displayAlert('Failed to add task', 'danger');
+          });
+      } else {
+        hideLoadingOverlay();
+        window.location.href = '{% url "logout" %}';
+      }
+    });
+
+    function addTaskToContainer(task) {
+      const card = document.createElement("div");
+      let dateElement;
+
+      if(task.complete){
+        card.classList.add("card-complete", "mb-3");
+        dateElement = document.createElement("small");
+        dateElement.classList.add("text-muted");
+        dateElement.textContent = `Completed on: ${formatDate(task.completed_on)}`;
+      }else{
+        if(task.priority)
+          card.classList.add("card-high-priority", "mb-3");
+        else if(task.priority===false)
+          card.classList.add("card-low-priority", "mb-3");
+
+        dateElement = document.createElement("small");
+        dateElement.classList.add("text-muted");
+        dateElement.textContent = `Created on: ${formatDate(task.timestamp)}`;
+      }
+
+      card.id = `task-${task.id}`;
+      const cardBody = document.createElement("div");
+      cardBody.classList.add("card-body");
+
+      const titleElement = document.createElement("h5");
+      titleElement.classList.add("card-title");
+      titleElement.textContent = task.title.toUpperCase();
+
+      const descriptionElement = document.createElement("p");
+      descriptionElement.classList.add("card-text");
+      descriptionElement.textContent = task.description;
+
+      cardBody.appendChild(titleElement);
+      cardBody.appendChild(descriptionElement);
+      cardBody.appendChild(dateElement);
+      card.appendChild(cardBody);
+      card.addEventListener('click', function() {
+        openDetailsModal(task);
+      });
+      tasksContainer.prepend(card);
+    }
+
+    function openDetailsModal(task) {
+      $('#taskDetailsModal').modal('show');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalDescription = document.getElementById('modalDescription');
+      const modalPriority = document.getElementById('modalPriority');
+      const modalDate = document.getElementById('modalDate');
+      const completeDate = document.getElementById('completeDate');
+
+      modalTitle.textContent = task.title.toUpperCase();
+      modalDescription.textContent = task.description;
+      modalPriority.textContent = `Priority: ${task.priority ? 'High' : 'Low'}`;
+      modalDate.textContent = `Created on: ${formatDate(task.timestamp)}`;
+      completeDate.textContent = `Completed on: ${formatDate(task.completed_on)}`;
+      currentTaskId = task.id;
+  
+      if (task.complete) {
+        completeDate.style.display = 'block';
+        taskDoneButton.style.display = 'None';
+        taskDeleteButton.style.display = 'block';
+      } else {
+        completeDate.style.display = 'None';
+        taskDeleteButton.style.display = 'None';
+        taskDoneButton.style.display = 'block';
+      }
+    }
+  
+
+    taskDoneButton.addEventListener('click', function () {
+      if (currentTaskId !== null) {
+        let accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+          let headers = {
+            Authorization: `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          };
+          showLoadingOverlay();
+          fetch(`/api/task-modify/${currentTaskId}/`, {
+            method: 'PATCH',
+            headers: headers,
+          })
+          .then(response => {
+            //hideLoadingOverlay();
+            if (!response.ok) {
+              throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+          })
+          .then(data => {
+            //hideLoadingOverlay();
+            removeTaskFromContainer(currentTaskId);
+            removeAllTaskCards();
+            fetchTasks(filter, order);
+          })
+          .catch(error => {
+            hideLoadingOverlay();
+          });
+        } else {
+          hideLoadingOverlay();
+          window.location.href = '{% url "logout" %}';
+        }
+      } else {
+        hideLoadingOverlay();
+      }
+    });    
+    
+    taskDeleteButton.addEventListener('click', function () {
+      if (currentTaskId !== null) {
+        let accessToken = localStorage.getItem('access_token');
+        if (accessToken) {
+          let headers = {
+            Authorization: `Bearer ${accessToken}`,
+          };
+          showLoadingOverlay();
+          axios.delete(`/api/task-modify/${currentTaskId}/`, { headers: headers })
+          .then(function (response) {
+            //hideLoadingOverlay();
+            removeTaskFromContainer(currentTaskId);
+            removeAllTaskCards();
+            fetchTasks(filter, order);
+          })
+          .catch(function (error) {
+            //hideLoadingOverlay();
+          });
+        } else {
+          hideLoadingOverlay();
+          window.location.href = '{% url "logout" %}';
+        }
+      } else {
+        hideLoadingOverlay();
+      }
+    });   
+    
+    function removeTaskFromContainer(taskId) {
+      const taskElement = document.getElementById(`task-${taskId}`);
+      if (taskElement) {
+        taskElement.classList.add('card-remove');
+        taskElement.addEventListener('transitionend', function () {
+          taskElement.remove();
+        });
+      }
+    }
+
+    function removeAllTaskCards() {
+      const tasksContainer = document.getElementById("tasks-container");
+      while (tasksContainer.firstChild) {
+        tasksContainer.firstChild.remove();
+      }
+    }
+
+    function formatDate(dateString) {
+      try {
+        const options = { hour: 'numeric', minute: 'numeric' };
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+    
+        if (isSameDay(date, today)) {
+          return 'Today ' + date.toLocaleTimeString('en-IN', options);
+        } else if (isSameDay(date, yesterday)) {
+          return 'Yesterday ' + date.toLocaleTimeString('en-IN', options);
+        } else {
+          return date.toLocaleString('en-IN', options);
+        }
+      } catch (error) {
+        return '';
+      }
+    }
+    
+    function isSameDay(date1, date2) {
+      return (
+        date1.getDate() === date2.getDate() &&
+        date1.getMonth() === date2.getMonth() &&
+        date1.getFullYear() === date2.getFullYear()
+      );
+    }
+
+    function displayEmptyTasksBackground(message) {
+      const tasksContainer = document.getElementById("tasks-container");
+      removeAllTaskCards();
+
+      const emptyTasksDiv = document.createElement("div");
+      emptyTasksDiv.style.backgroundImage = `url("{% static '404.gif' %}")`;
+      emptyTasksDiv.style.backgroundSize = 'fit';
+      emptyTasksDiv.style.height = '360px';
+      emptyTasksDiv.style.display = 'flex';
+      emptyTasksDiv.style.justifyContent = 'center';
+      emptyTasksDiv.style.alignItems = 'flex-end';  
+
+      const messageElement = document.createElement("h3");
+      messageElement.style.marginBottom = '300px';  
+      messageElement.style.fontSize = '24px';      
+      messageElement.style.fontFamily = 'Arial, sans-serif';  
+      messageElement.style.color = '#b73cfa';
+      messageElement.style.fontWeight = 'bold';
+      messageElement.textContent = message;
+
+      emptyTasksDiv.appendChild(messageElement);
+      tasksContainer.appendChild(emptyTasksDiv);
+    }
+
+
+    $('#sidebarCollapse').on('click', function () {
+          if ($('#bottomSidebar').hasClass('active') === false) {
+              $('#bottomSidebar').toggleClass('active');
+          }
+          $('#sidebar').toggleClass('active');
+    });
+    
+    $('#openDownSidebar').on('click', function () {
+        if ($('#sidebar').hasClass('active') === false) {
+            $('#sidebar').toggleClass('active');
+        }
+        $('#bottomSidebar').toggleClass('active');
+    });
+    
+    $('#closeDownSidebar').on('click', function () {
+        closeDownSidebar();
+    });
+
+    function closeDownSidebar() {
+      $('#bottomSidebar').toggleClass('active');
+    }
+  });
+
+</script>
+{% endblock script %}

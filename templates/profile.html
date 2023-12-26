@@ -1,0 +1,135 @@
+{% extends "navbar.html" %}
+{% block title %}Profile{% endblock title %}
+
+{% block style %}
+<style>
+    .form-control[readonly] {
+      cursor: not-allowed;
+    }
+</style>
+{% endblock style %}
+
+{% block body %}
+<div id="alertContainer"></div>
+<div class="container mt-5">
+  <div class="card p-4">
+    <form id="profileForm" method="patch">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label for="username" class="form-label">Username</label>
+        <input type="text" class="form-control" name="username" id="username" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="email" class="form-label">Email</label>
+        <input type="email" class="form-control" name="email" id="email" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="firstName" class="form-label">First Name</label>
+        <input type="text" class="form-control" name="first_name" id="first_name" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="lastName" class="form-label">Last Name</label>
+        <input type="text" class="form-control" name="last_name" id="last_name" readonly>
+      </div>
+      <div class="mb-3">
+        <label for="phoneNo" class="form-label">Phone</label>
+        <input type="text" class="form-control" name="phone_no" minlength="10" maxlength="10" id="phone_no" readonly>
+      </div>
+      <div class="d-flex justify-content-between">
+        <div>
+          <button type="button" class="btn btn-primary" id="updateButton">Update</button>
+        </div>
+        <div class="d-flex justify-content-end" id="submitButtonContainer">
+          <button id="submitButton" type="submit" class="btn btn-success" style="display: none;">Submit</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock body %}
+
+{% block script %}
+<script>
+    $('#sidebarCollapse').on('click', function () {
+        $('#sidebar').toggleClass('active');
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const profileForm = document.getElementById('profileForm');
+        const submitButton = document.getElementById('submitButton');
+        const alertContainer = document.getElementById('alertContainer');
+        fetchUserDetails(); 
+
+        function fetchUserDetails() {
+            let accessToken = localStorage.getItem('access_token');
+            if (accessToken) {
+                let headers = {
+                Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                };
+                showLoadingOverlay();
+                axios.get('/api/profile/', { headers: headers })
+                .then(function (response) {
+                    let user = response.data;
+                    hideLoadingOverlay();
+                    document.getElementById('username').value = user.username;
+                    document.getElementById('email').value = user.email;
+                    document.getElementById('first_name').value = user.first_name;
+                    document.getElementById('last_name').value = user.last_name;
+                    document.getElementById('phone_no').value = user.phone_no;
+                })
+                .catch(function (error) {
+                    //console.error(error);
+                    hideLoadingOverlay();
+                    window.location.href = '{% url "logout" %}';
+                });
+            } else {
+                hideLoadingOverlay();
+                window.location.href = '{% url "logout" %}';
+            }
+        }
+
+        document.getElementById('updateButton').addEventListener('click', function () {
+            this.disabled = true;
+            document.getElementById('last_name').readOnly = false;
+            document.getElementById('phone_no').readOnly = false;
+
+            submitButton.style.display = 'block';
+        });
+
+        profileForm.addEventListener('submit', function (event) {
+            event.preventDefault();
+            let formData = new FormData(profileForm);
+            let accessToken = localStorage.getItem('access_token');
+            if (accessToken) {
+                let headers = {
+                    Authorization: `Bearer ${accessToken}`,
+                    'Content-Type': 'application/json',
+                };
+                showLoadingOverlay();
+                axios.put('/api/update-profile/', formData, { headers: headers })
+                .then(function (response) {
+                    hideLoadingOverlay();
+                    fetchUserDetails();
+                    document.getElementById('last_name').readOnly = true;
+                    document.getElementById('phone_no').readOnly = true;
+                    submitButton.style.display = 'none';
+                    document.getElementById('updateButton').disabled = false;
+                    displayAlert('Profile updated successfully', 'success');
+                })
+                .catch(function (error) {
+                    hideLoadingOverlay();
+                    let errorMessage = error.response.data.detail;
+                    if (errorMessage.includes('token not valid')) {
+                        window.location.href = '{% url "logout" %}';
+                    }
+                    displayErrorAlert('Failed to update profile: ' + errorMessage, 'danger');
+                });
+            } else {
+                hideLoadingOverlay();
+                window.location.href = '{% url "logout" %}';
+            }
+        });
+    });
+</script>
+{% endblock script %}
